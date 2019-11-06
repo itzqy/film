@@ -3,41 +3,26 @@
     <div class="search_input">
       <div class="search_input_wrapper">
         <i class="iconfont icon-sousuo"></i>
-        <input type="text" />
+        <input type="text" v-model="message" />
       </div>
     </div>
     <div class="search_result">
-      <h3>电影/电视剧/综艺</h3>
+      <h3>电影</h3>
       <ul>
-        <li>
+        <li v-for="item in moviesList" :key="item.id">
           <div class="img">
-            <img src="/images/movie_1.jpg" />
+            <img :src="item.img | setWH('128.180')" />
           </div>
           <div class="info">
             <p>
-              <span>无名之辈</span>
-              <span>8.5</span>
+              <span>{{item.nm}}</span>
+              <span>{{item.sc}}</span>
             </p>
-            <p>A Cool Fish</p>
-            <p>剧情,喜剧,犯罪</p>
-            <p>2018-11-16</p>
+            <p>{{item.enm}}</p>
+            <p>{{item.cat}}</p>
+            <p>{{item.frt}}</p>
           </div>
         </li>
-        <li>
-          <div class="img">
-            <img src="/images/movie_1.jpg" />
-          </div>
-          <div class="info">
-            <p>
-              <span>无名之辈</span>
-              <span>8.5</span>
-            </p>
-            <p>A Cool Fish</p>
-            <p>剧情,喜剧,犯罪</p>
-            <p>2018-11-16</p>
-          </div>
-        </li>
-        
       </ul>
     </div>
   </div>
@@ -46,9 +31,43 @@
 export default {
   data() {
     return {
-
+      message: '',
+      moviesList: []
     }
-  }
+  },
+  methods: {
+    cancelRequest() {
+      if (typeof this.source === 'function') {
+        this.source('终止请求')
+      }
+    },
+  },
+  watch: {
+    message(newVal) {
+      this.cancelRequest();
+      this.axios.get('/api/searchList?cityId=10&kw=' + newVal, {
+        cancelToken: new this.axios.CancelToken((c)=> {
+          console.log(121)
+          this.source = c;
+        })
+      }).then((res) => {
+        let msg = res.data.msg;
+        let movies = res.data.data.movies;
+        if (msg && movies) {
+          this.moviesList = res.data.data.movies.list
+        }
+
+      }).catch((err) => {
+        if (this.axios.isCancel(err)) {
+          console.log('Rquest canceled', err.message); //请求如果被取消，这里是返回取消的message
+        } else {
+          //handle error
+          console.log(err);
+        }
+      })
+    }
+  },
+
 }
 </script>
 <style lang="scss">
@@ -107,10 +126,14 @@ export default {
   flex: 1;
 }
 .search_body .search_result .info p {
+  width: 200px;
   height: 22px;
   display: flex;
   line-height: 22px;
   font-size: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .search_body .search_result .info p:nth-of-type(1) span:nth-of-type(1) {
   font-size: 18px;
